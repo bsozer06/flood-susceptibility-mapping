@@ -1,0 +1,12 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Buyuk ara cikti (pipeline ile yeniden uretilir)
+data/sel.geojson
+
+# tippecanoe gecici dosyasi
+docs/*.pmtiles-journal
+
+ARCHITECTURE.md

@@ -1,0 +1,4 @@
+rasterio>=1.4
+shapely>=2.0
+jenkspy>=0.4
+numpy>=1.26

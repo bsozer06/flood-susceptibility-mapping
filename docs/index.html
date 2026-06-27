@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>Sel Duyarlılık Haritası (mAHP 2015)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+  <style>
+    html, body { margin: 0; height: 100%; }
+    #map { position: absolute; inset: 0; }
+    #legend {
+      position: absolute; bottom: 18px; left: 18px; z-index: 1;
+      background: rgba(255,255,255,0.92); padding: 12px 14px; border-radius: 8px;
+      font: 13px/1.4 system-ui, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+      max-width: 240px;
+    }
+    #legend h3 { margin: 0 0 8px; font-size: 14px; }
+    .row { display: flex; align-items: center; margin: 3px 0; }
+    .sw { width: 16px; height: 16px; border-radius: 3px; margin-right: 8px; flex: 0 0 auto; }
+    .muted { color: #666; font-size: 11px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="legend">
+    <h3>Sel Duyarlılığı</h3>
+    <div id="legend-rows"></div>
+    <div class="muted">Yöntem: Jenks doğal kırılım · mAHP 2015</div>
+  </div>
+
+  <script>
+    // class 1..5 -> renk (düşük=yeşil, yüksek=kırmızı)
+    const COLORS = {
+      1: "#1a9850", // çok düşük
+      2: "#a6d96a", // düşük
+      3: "#fee08b", // orta
+      4: "#fdae61", // yüksek
+      5: "#d73027", // çok yüksek
+    };
+    const LABELS = {
+      1: "Çok düşük", 2: "Düşük", 3: "Orta", 4: "Yüksek", 5: "Çok yüksek",
+    };
+
+    // pmtiles protokolünü kaydet
+    const protocol = new pmtiles.Protocol();
+    maplibregl.addProtocol("pmtiles", protocol.tile);
+
+    const map = new maplibregl.Map({
+      container: "map",
+      // anahtarsız ücretsiz CARTO altlık stili
+      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      center: [32.9, 39.9], // breaks.json gelince fitBounds ile düzeltilir
+      zoom: 8,
+    });
+    map.addControl(new maplibregl.NavigationControl(), "top-right");
+    map.addControl(new maplibregl.ScaleControl());
+
+    // class -> renk için MapLibre "match" ifadesi
+    const fillColor = ["match", ["get", "class"]];
+    for (let c = 1; c <= 5; c++) fillColor.push(c, COLORS[c]);
+    fillColor.push("#cccccc"); // varsayılan
+
+    Promise.all([
+      new Promise((res) => map.on("load", res)),
+      fetch("./breaks.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([, meta]) => {
+      map.addSource("susceptibility", {
+        type: "vector",
+        url: "pmtiles://./sel.pmtiles",
+      });
+
+      map.addLayer({
+        id: "sel-fill",
+        type: "fill",
+        source: "susceptibility",
+        "source-layer": "susceptibility",
+        paint: {
+          "fill-color": fillColor,
+          "fill-opacity": 0.6,
+        },
+      });
+
+      map.addLayer({
+        id: "sel-outline",
+        type: "line",
+        source: "susceptibility",
+        "source-layer": "susceptibility",
+        paint: { "line-color": "#555", "line-width": 0.3, "line-opacity": 0.4 },
+      });
+
+      // Tıklayınca sınıf bilgisi
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: true });
+      map.on("click", "sel-fill", (e) => {
+        const c = e.features[0].properties.class;
+        popup
+          .setLngLat(e.lngLat)
+          .setHTML(`<b>Sınıf ${c}</b> — ${LABELS[c] || ""}`)
+          .addTo(map);
+      });
+      map.on("mouseenter", "sel-fill", () => (map.getCanvas().style.cursor = "pointer"));
+      map.on("mouseleave", "sel-fill", () => (map.getCanvas().style.cursor = ""));
+
+      // bbox -> fitBounds  ([minx,miny,maxx,maxy])
+      if (meta && Array.isArray(meta.bbox)) {
+        const [minx, miny, maxx, maxy] = meta.bbox;
+        map.fitBounds([[minx, miny], [maxx, maxy]], { padding: 30, duration: 0 });
+      }
+
+      // Lejant satırları (breaks.json'dan değer aralıklarıyla)
+      const rows = document.getElementById("legend-rows");
+      const ranges = meta && meta.ranges ? meta.ranges : null;
+      for (let c = 1; c <= 5; c++) {
+        const r = ranges ? ranges.find((x) => x.class === c) : null;
+        const range = r ? ` <span class="muted">(${r.min}–${r.max})</span>` : "";
+        rows.insertAdjacentHTML(
+          "beforeend",
+          `<div class="row"><span class="sw" style="background:${COLORS[c]}"></span>${LABELS[c]}${range}</div>`
+        );
+      }
+    });
+  </script>
+</body>
+</html>
