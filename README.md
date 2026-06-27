@@ -1,5 +1,8 @@
 # Flood Susceptibility Map (mAHP 2015)
 
+The flood susceptibility map is resulted in my academic research: 
+- https://isprs-archives.copernicus.org/articles/XLII-5/361/2018/
+
 Converts a flood susceptibility raster produced with the mAHP method
 (`data/mAHP_2015_son_dp5_clip.tif`) into an interactive vector web map. The output is a
 single static `.pmtiles` file, published on GitHub Pages (over HTTP range requests, with
