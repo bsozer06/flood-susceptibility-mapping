@@ -131,7 +131,6 @@ scripts/
   build_pmtiles.ps1            GeoJSON -> docs/sel.pmtiles (Docker tippecanoe)
   tippecanoe.Dockerfile        Builds the local tippecanoe-local image
 requirements.txt               Python dependencies
-ARCHITECTURE.md                Architecture & detailed run guide
 ```
 
 ## Notes
@@ -139,5 +138,3 @@ ARCHITECTURE.md                Architecture & detailed run guide
 - The source raster has no embedded CRS; positioning comes from the `.tfw` world file
   (UTM Zone 36N / EPSG:32636, 10 m pixels, Ankara region).
 - `data/sel.geojson` (~80 MB intermediate output) and `.venv/` are git-ignored.
-- For architecture details, tunable parameters, and troubleshooting, see
-  [ARCHITECTURE.md](ARCHITECTURE.md).

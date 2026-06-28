@@ -10,3 +10,5 @@ data/sel.geojson
 docs/*.pmtiles-journal
 
 ARCHITECTURE.md
+
+classify_polygonize.ipynb
